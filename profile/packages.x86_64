@@ -4,7 +4,7 @@ base-devel
 linux
 linux-firmware
 
-# Bootloader / boot utilities
+# Boot support
 syslinux
 memtest86+
 memtest86+-efi
@@ -23,9 +23,6 @@ dolphin
 # Graphics / Wayland
 xorg-server
 xorg-xwayland
-
-# Installer
-calamares
 
 # Useful tools
 nano
