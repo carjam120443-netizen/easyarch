@@ -15,6 +15,17 @@ fi
 
 rm -rf "$AUR_DIR"
 
+# Enable Chaotic-AUR in the live environment. The keyring and mirrorlist are
+# installed from the package manifest, so the repository can use normal
+# signature verification instead of TrustAll/unsigned packages.
+if [[ -f /etc/pacman.d/chaotic-mirrorlist ]] && ! grep -q '^\[chaotic-aur\]' /etc/pacman.conf; then
+  cat >> /etc/pacman.conf <<'EOF'
+
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+fi
+
 # EasyArch's installer wrapper must shadow /usr/bin/archinstall.
 chmod 755 /usr/local/bin/archinstall 2>/dev/null || true
 
