@@ -4,6 +4,9 @@ base-devel
 linux
 linux-firmware
 
+# Archiso initramfs hooks
+mkinitcpio-archiso
+
 # Boot support
 syslinux
 memtest86+
