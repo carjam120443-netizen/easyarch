@@ -24,6 +24,9 @@ dolphin
 xorg-server
 xorg-xwayland
 
+# Installer
+archinstall
+
 # Useful tools
 nano
 vim
