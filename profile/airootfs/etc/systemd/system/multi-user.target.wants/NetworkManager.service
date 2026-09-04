@@ -1,0 +1,13 @@
+[Unit]
+Description=Network Manager
+After=dbus.service
+Wants=network.target
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.NetworkManager
+ExecStart=/usr/bin/NetworkManager --no-daemon
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
