@@ -31,6 +31,14 @@ cp -a /usr/share/archiso/configs/releng/. "$BUILD_PROFILE/"
 cp "$PROFILE_DIR/profiledef.sh" "$BUILD_PROFILE/profiledef.sh"
 cp "$PROFILE_DIR/packages.x86_64" "$BUILD_PROFILE/packages.x86_64"
 
+# Keep the package manifests inside the live system so the EasyArch
+# archinstall wrapper can use the same lists for the installed system.
+install -d -m 755 "$BUILD_PROFILE/airootfs/usr/share/easyarch"
+cp "$PROFILE_DIR/packages.x86_64" "$BUILD_PROFILE/airootfs/usr/share/easyarch/packages.x86_64"
+if [[ -f "$PROFILE_DIR/aur-packages.txt" ]]; then
+  cp "$PROFILE_DIR/aur-packages.txt" "$BUILD_PROFILE/airootfs/usr/share/easyarch/aur-packages.txt"
+fi
+
 if [[ -d "$PROFILE_DIR/airootfs" ]]; then
   cp -a "$PROFILE_DIR/airootfs/." "$BUILD_PROFILE/airootfs/"
 fi
@@ -46,12 +54,8 @@ for mkinitcpio_conf in \
   fi
 done
 
-# Build AUR packages outside the ISO rootfs. This prevents makepkg/Go build
-# dependencies and pacman caches from consuming the rootfs build's free space.
-# The resulting packages are copied into the airootfs and installed near the
-# end of mkarchiso's rootfs customization stage.
-# fetchit's current PKGBUILD includes <toml++/toml.hpp>, so install the
-# official Arch tomlplusplus package explicitly for its header.
+# Build every AUR package listed in the shared manifest outside the ISO
+# rootfs. This keeps build-only dependencies out of the final image.
 pacman -S --noconfirm --needed git base-devel go tomlplusplus
 
 useradd --create-home --shell /bin/bash aurbuild
@@ -64,11 +68,14 @@ build_aur() {
   rm -rf "$srcdir"
   runuser -u aurbuild -- git clone "https://aur.archlinux.org/${package}.git" "$srcdir"
   runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --syncdeps --noconfirm --clean --cleanbuild"
-  cp "$srcdir"/*.pkg.tar.zst "$AUR_OUTPUT_DIR/"
-}
+  # Only copy the main package. Debug packages are not needed in EasyArch.
+  find "$srcdir" -maxdepth 1 -type f -name "${package}-[0-9]*.pkg.tar.zst" -exec cp {} "$AUR_OUTPUT_DIR/" \;
+done
 
-build_aur yay
-build_aur fetchit
+while IFS= read -r package; do
+  [[ -z "$package" || "$package" == \#* ]] && continue
+  build_aur "$package"
+done < "$PROFILE_DIR/aur-packages.txt"
 
 rm -rf "$BUILD_PROFILE/airootfs/root/aur-packages"
 mkdir -p "$BUILD_PROFILE/airootfs/root/aur-packages"
