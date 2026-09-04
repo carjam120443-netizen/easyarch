@@ -42,6 +42,9 @@ apt
 # Package building / fakeroot support
 fakeroot
 
+# KDE PIM / Email
+kmail
+
 # Useful tools
 nano
 vim
