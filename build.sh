@@ -70,7 +70,7 @@ build_aur() {
   runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --syncdeps --noconfirm --clean --cleanbuild"
   # Only copy the main package. Debug packages are not needed in EasyArch.
   find "$srcdir" -maxdepth 1 -type f -name "${package}-[0-9]*.pkg.tar.zst" -exec cp {} "$AUR_OUTPUT_DIR/" \;
-done
+}
 
 while IFS= read -r package; do
   [[ -z "$package" || "$package" == \#* ]] && continue
