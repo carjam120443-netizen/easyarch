@@ -1,0 +1,4 @@
+# AUR packages included in the EasyArch live environment and installed
+# into systems created through the EasyArch archinstall wrapper.
+yay
+fetchit
