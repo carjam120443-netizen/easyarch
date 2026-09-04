@@ -15,14 +15,21 @@ command -v mkarchiso >/dev/null 2>&1 || {
 }
 
 # Arch's pacman disk-space check can fail inside Docker because the container's
-# overlay root does not always expose a usable mount point to statvfs(). The
-# GitHub runner has ample disk space, and mkarchiso performs its own build-space
-# work, so disable only pacman's pre-transaction space check in this build
-# container. This does not disable any package integrity or conflict checks.
+# overlay root does not always expose a usable mount point to statvfs().
 sed -i -E 's/^[[:space:]]*CheckSpace/#CheckSpace/' /etc/pacman.conf
 
 rm -rf "$WORK_DIR" "$OUT_DIR"
 mkdir -p "$BUILD_PROFILE" "$OUT_DIR" "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR"
+
+# Bootstrap Chaotic-AUR's signing key and support packages on the build host.
+# The profile pacman.conf enables the repository for mkarchiso; the keyring
+# must already be trusted before mkarchiso resolves packages from it.
+pacman-key --init
+pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+pacman-key --lsign-key 3056513887B78AEB
+pacman -U --noconfirm \
+  'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
+  'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
 
 # Start from Arch's maintained releng profile so bootloader and live-media
 # configuration stays compatible with current archiso releases.
@@ -30,6 +37,7 @@ cp -a /usr/share/archiso/configs/releng/. "$BUILD_PROFILE/"
 
 cp "$PROFILE_DIR/profiledef.sh" "$BUILD_PROFILE/profiledef.sh"
 cp "$PROFILE_DIR/packages.x86_64" "$BUILD_PROFILE/packages.x86_64"
+cp "$PROFILE_DIR/pacman.conf" "$BUILD_PROFILE/pacman.conf"
 
 # Keep the package manifests inside the live system so the EasyArch
 # archinstall wrapper can use the same lists for the installed system.
