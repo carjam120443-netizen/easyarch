@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# EasyArch installer launcher.
+# Keeps the ISO's package manifest as the single source of truth and makes
+# those official-repository packages available to the installed system via
+# archinstall's additional package list. AUR packages are handled separately
+# after the base installation.
+
+PROFILE_PACKAGES="/usr/share/easyarch/packages.x86_64"
+CONFIG="/tmp/easyarch-archinstall.json"
+
+if [[ ! -f "$PROFILE_PACKAGES" ]]; then
+  echo "Error: EasyArch package manifest is missing: $PROFILE_PACKAGES" >&2
+  exit 1
+fi
+
+mapfile -t packages < <(grep -Ev '^[[:space:]]*(#|$)' "$PROFILE_PACKAGES")
+
+python - "$CONFIG" "${packages[@]}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+packages = sys.argv[2:]
+
+# archinstall requires several other values to be selected interactively.
+# Supplying only packages here lets the normal guided installer remain in
+# control of disk layout, users, locale, networking, bootloader, etc.
+config = {
+    "packages": packages,
+}
+
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(config, f, indent=2)
+PY
+
+exec archinstall --config "$CONFIG"
