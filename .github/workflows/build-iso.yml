@@ -18,21 +18,22 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
 
     steps:
-      - name: Install build dependencies
-        run: |
-          pacman -Sy --noconfirm --needed archiso git
-
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Build ISO
+      - name: Build EasyArch ISO in Arch Linux
         run: |
-          chmod +x build.sh
-          ./build.sh
+          docker run --privileged --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            archlinux:latest \
+            bash -euxo pipefail -c '
+              pacman -Sy --noconfirm --needed archiso
+              chmod +x build.sh
+              ./build.sh
+            '
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
