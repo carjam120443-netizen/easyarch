@@ -25,6 +25,7 @@ dolphin
 
 # Lightweight window manager
 fluxbox
+gala
 
 # Graphics / Wayland
 xorg-server
