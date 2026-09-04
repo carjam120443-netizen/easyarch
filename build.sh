@@ -26,6 +26,17 @@ if [[ -d "$PROFILE_DIR/airootfs" ]]; then
   cp -a "$PROFILE_DIR/airootfs/." "$BUILD_PROFILE/airootfs/"
 fi
 
+# The releng profile can contain optional PXE hooks that are unavailable in
+# some archiso/mkinitcpio combinations. EasyArch is a normal bootable ISO,
+# not a PXE/NFS image, so keep only the hooks needed for local ISO booting.
+for mkinitcpio_conf in \
+  "$BUILD_PROFILE/airootfs/etc/mkinitcpio.conf" \
+  "$BUILD_PROFILE/airootfs/etc/mkinitcpio.conf.d/archiso.conf"; do
+  if [[ -f "$mkinitcpio_conf" ]]; then
+    sed -i -E 's/[[:space:]]+archiso_pxe_(common|nbd|http|nfs)//g' "$mkinitcpio_conf"
+  fi
+done
+
 # Enable NetworkManager and SDDM in the live environment.
 mkdir -p "$BUILD_PROFILE/airootfs/etc/systemd/system/multi-user.target.wants"
 mkdir -p "$BUILD_PROFILE/airootfs/etc/systemd/system/graphical.target.wants"
