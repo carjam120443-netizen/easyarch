@@ -6,14 +6,16 @@ PROFILE_DIR="$SCRIPT_DIR/profile"
 WORK_DIR="$SCRIPT_DIR/work"
 OUT_DIR="$SCRIPT_DIR/out"
 BUILD_PROFILE="$WORK_DIR/profile"
+AUR_BUILD_DIR="$WORK_DIR/aur-build"
+AUR_OUTPUT_DIR="$WORK_DIR/aur-packages"
 
 command -v mkarchiso >/dev/null 2>&1 || {
   echo "Error: mkarchiso is not installed. Install the archiso package first."
   exit 1
 }
 
-rm -rf "$WORK_DIR"
-mkdir -p "$BUILD_PROFILE" "$OUT_DIR"
+rm -rf "$WORK_DIR" "$OUT_DIR"
+mkdir -p "$BUILD_PROFILE" "$OUT_DIR" "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR"
 
 # Start from Arch's maintained releng profile so bootloader and live-media
 # configuration stays compatible with current archiso releases.
@@ -36,6 +38,38 @@ for mkinitcpio_conf in \
     sed -i -E 's/[[:space:]]+archiso_pxe_(common|nbd|http|nfs)//g' "$mkinitcpio_conf"
   fi
 done
+
+# Build AUR packages outside the ISO rootfs. This prevents makepkg/Go build
+# dependencies and pacman caches from consuming the rootfs build's free space.
+# The resulting packages are copied into the airootfs and installed near the
+# end of mkarchiso's rootfs customization stage.
+pacman -S --noconfirm --needed git base-devel go
+
+useradd --create-home --shell /bin/bash aurbuild
+chown -R aurbuild:aurbuild "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR"
+
+build_aur() {
+  local package="$1"
+  local srcdir="$AUR_BUILD_DIR/$package"
+
+  rm -rf "$srcdir"
+  runuser -u aurbuild -- git clone "https://aur.archlinux.org/${package}.git" "$srcdir"
+  runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --syncdeps --noconfirm --clean --cleanbuild"
+  cp "$srcdir"/*.pkg.tar.zst "$AUR_OUTPUT_DIR/"
+}
+
+build_aur yay
+build_aur fetchit
+
+rm -rf "$BUILD_PROFILE/airootfs/root/aur-packages"
+mkdir -p "$BUILD_PROFILE/airootfs/root/aur-packages"
+cp "$AUR_OUTPUT_DIR"/*.pkg.tar.zst "$BUILD_PROFILE/airootfs/root/aur-packages/"
+
+# The build-only toolchain/cache is not part of the final ISO rootfs.
+userdel -r aurbuild || true
+rm -rf "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR" /root/.cache/go-build /root/.cache/go-build-cache
+pacman -Rns --noconfirm go || true
+pacman -Scc --noconfirm || true
 
 # Enable NetworkManager and SDDM in the live environment.
 mkdir -p "$BUILD_PROFILE/airootfs/etc/systemd/system/multi-user.target.wants"
