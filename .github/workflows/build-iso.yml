@@ -1,0 +1,43 @@
+name: Build EasyArch ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'profile/**'
+      - 'build.sh'
+      - '.github/workflows/build-iso.yml'
+
+permissions:
+  contents: read
+
+env:
+  TZ: UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Sy --noconfirm --needed archiso git
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build ISO
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: easyarch-iso
+          path: out/*.iso
+          if-no-files-found: error
+          retention-days: 14
