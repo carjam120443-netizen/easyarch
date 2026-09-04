@@ -43,7 +43,9 @@ done
 # dependencies and pacman caches from consuming the rootfs build's free space.
 # The resulting packages are copied into the airootfs and installed near the
 # end of mkarchiso's rootfs customization stage.
-pacman -S --noconfirm --needed git base-devel go
+# fetchit's current PKGBUILD includes <toml++/toml.hpp>, so install the
+# official Arch tomlplusplus package explicitly for its header.
+pacman -S --noconfirm --needed git base-devel go tomlplusplus
 
 useradd --create-home --shell /bin/bash aurbuild
 chown -R aurbuild:aurbuild "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR"
@@ -69,6 +71,7 @@ cp "$AUR_OUTPUT_DIR"/*.pkg.tar.zst "$BUILD_PROFILE/airootfs/root/aur-packages/"
 userdel -r aurbuild || true
 rm -rf "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR" /root/.cache/go-build /root/.cache/go-build-cache
 pacman -Rns --noconfirm go || true
+pacman -Rns --noconfirm tomlplusplus || true
 pacman -Scc --noconfirm || true
 
 # Enable NetworkManager and SDDM in the live environment.
