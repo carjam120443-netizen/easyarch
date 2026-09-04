@@ -33,6 +33,12 @@ archinstall
 # Shells
 ksh
 
+# Cross-distro package tools
+# Arch still uses pacman as its native package manager; these provide
+# Debian-compatible apt/dpkg tooling alongside it.
+dpkg
+apt
+
 # Useful tools
 nano
 vim
