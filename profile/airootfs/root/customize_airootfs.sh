@@ -1,36 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build and install AUR packages into the live EasyArch environment.
-# AUR packages are community-maintained PKGBUILDs, so this intentionally
-# builds them with makepkg rather than installing an opaque binary.
-# Do NOT run a full system upgrade here: the ISO build already installs the
-# package set, and pulling in Go plus a full upgrade wastes runner disk space.
-pacman -S --noconfirm --needed git go
+# Install AUR packages that were prebuilt by build.sh.
+# Building them here would require a Go toolchain and large temporary build
+# dependencies inside the ISO rootfs, which can exhaust the build disk.
+AUR_DIR=/root/aur-packages
 
-useradd --create-home --shell /bin/bash aurbuild
-chown -R aurbuild:aurbuild /home/aurbuild
+if compgen -G "$AUR_DIR/*.pkg.tar.zst" >/dev/null; then
+  pacman -U --noconfirm "$AUR_DIR"/*.pkg.tar.zst
+fi
 
-build_aur() {
-  local package="$1"
-  local workdir="/home/aurbuild/${package}"
-
-  rm -rf "$workdir"
-  sudo -u aurbuild git clone "https://aur.archlinux.org/${package}.git" "$workdir"
-  sudo -u aurbuild bash -c "cd '$workdir' && makepkg --syncdeps --noconfirm --clean --cleanbuild"
-  pacman -U --noconfirm "$workdir"/*.pkg.tar.zst
-  rm -rf "$workdir"
-  pacman -Scc --noconfirm || true
-}
-
-# yay provides normal AUR access after EasyArch is installed/booted.
-build_aur yay
-
-# fetchit is the EasyArch default system-information fetch tool.
-build_aur fetchit
+rm -rf "$AUR_DIR"
 
 # Keep the canonical EasyArch Tux branding asset in one place.
 install -d -m 755 /usr/share/easyarch/branding
-
-userdel -r aurbuild || true
-rm -rf /home/aurbuild /root/.cache/go-build /root/.cache/go-build-cache 2>/dev/null || true
