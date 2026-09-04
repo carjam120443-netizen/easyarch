@@ -14,6 +14,13 @@ command -v mkarchiso >/dev/null 2>&1 || {
   exit 1
 }
 
+# Arch's pacman disk-space check can fail inside Docker because the container's
+# overlay root does not always expose a usable mount point to statvfs(). The
+# GitHub runner has ample disk space, and mkarchiso performs its own build-space
+# work, so disable only pacman's pre-transaction space check in this build
+# container. This does not disable any package integrity or conflict checks.
+sed -i -E 's/^[[:space:]]*CheckSpace/#CheckSpace/' /etc/pacman.conf
+
 rm -rf "$WORK_DIR" "$OUT_DIR"
 mkdir -p "$BUILD_PROFILE" "$OUT_DIR" "$AUR_BUILD_DIR" "$AUR_OUTPUT_DIR"
 
