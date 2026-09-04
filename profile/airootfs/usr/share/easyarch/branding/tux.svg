@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">EasyArch Tux</title>
+  <desc id="desc">A simple Linux penguin mascot used as EasyArch's fetch branding.</desc>
+  <ellipse cx="128" cy="142" rx="73" ry="91" fill="#222"/>
+  <ellipse cx="128" cy="155" rx="52" ry="72" fill="#f5f5f5"/>
+  <ellipse cx="101" cy="88" rx="25" ry="29" fill="#222"/>
+  <ellipse cx="155" cy="88" rx="25" ry="29" fill="#222"/>
+  <circle cx="108" cy="87" r="9" fill="#fff"/>
+  <circle cx="148" cy="87" r="9" fill="#fff"/>
+  <circle cx="108" cy="87" r="4" fill="#111"/>
+  <circle cx="148" cy="87" r="4" fill="#111"/>
+  <path d="M111 105 Q128 91 145 105 L128 126 Z" fill="#f2a900"/>
+  <ellipse cx="69" cy="151" rx="23" ry="59" transform="rotate(18 69 151)" fill="#222"/>
+  <ellipse cx="187" cy="151" rx="23" ry="59" transform="rotate(-18 187 151)" fill="#222"/>
+  <ellipse cx="93" cy="228" rx="42" ry="14" fill="#f2a900"/>
+  <ellipse cx="163" cy="228" rx="42" ry="14" fill="#f2a900"/>
+</svg>
