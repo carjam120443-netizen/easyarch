@@ -1,0 +1,30 @@
+# Base
+base
+base-devel
+linux
+linux-firmware
+
+# Networking
+networkmanager
+
+# Desktop
+plasma-meta
+plasma-workspace
+sddm
+konsole
+dolphin
+
+# Graphics / Wayland
+xorg-server
+xorg-xwayland
+
+# Installer
+calamares
+
+# Useful tools
+nano
+vim
+git
+sudo
+fastfetch
+firefox
