@@ -53,6 +53,10 @@ virtualbox-guest-utils
 wine
 winetricks
 
+# Chaotic-AUR repository support
+chaotic-keyring
+chaotic-mirrorlist
+
 # Useful tools
 nano
 vim
