@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# EasyArch's archinstall launcher. It keeps the guided installer interactive
+# while automatically carrying the EasyArch package manifests into the new
+# installation. Official packages are passed through archinstall's packages
+# configuration; AUR packages are built in the target as a post-install step.
+
+OFFICIAL_MANIFEST=/usr/share/easyarch/packages.x86_64
+AUR_MANIFEST=/usr/share/easyarch/aur-packages.txt
+CONFIG=/tmp/easyarch-archinstall.json
+
+mapfile -t official_packages < <(grep -Ev '^[[:space:]]*(#|$)' "$OFFICIAL_MANIFEST")
+mapfile -t aur_packages < <(grep -Ev '^[[:space:]]*(#|$)' "$AUR_MANIFEST" 2>/dev/null || true)
+
+python - "$CONFIG" "${official_packages[@]}" "${aur_packages[@]}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+official_count = 0
+
+# Split the arguments using a sentinel so package names stay ordinary strings.
+try:
+    sentinel = sys.argv.index("--AUR--")
+except ValueError:
+    official = sys.argv[2:]
+    aur = []
+else:
+    official = sys.argv[2:sentinel]
+    aur = sys.argv[sentinel + 1:]
+
+# Build the AUR post-install command. It runs inside the newly installed
+# system after archinstall has installed the official EasyArch packages.
+commands = []
+if aur:
+    quoted = " ".join("'" + p.replace("'", "'\\''") + "'" for p in aur)
+    commands.append(
+        "set -e; pacman -S --noconfirm --needed git base-devel; "
+        "useradd --create-home --shell /bin/bash easyarch-aur 2>/dev/null || true; "
+        "mkdir -p /root/easyarch-aur-build; "
+        "chown -R easyarch-aur:easyarch-aur /root/easyarch-aur-build; "
+        "for p in " + quoted + "; do "
+        "rm -rf /root/easyarch-aur-build/$p; "
+        "runuser -u easyarch-aur -- git clone https://aur.archlinux.org/$p.git /root/easyarch-aur-build/$p; "
+        "runuser -u easyarch-aur -- bash -c \"cd /root/easyarch-aur-build/$p && makepkg --syncdeps --noconfirm --clean --cleanbuild\"; "
+        "pacman -U --noconfirm /root/easyarch-aur-build/$p/*.pkg.tar.zst; "
+        "done; "
+        "rm -rf /root/easyarch-aur-build; userdel -r easyarch-aur 2>/dev/null || true"
+    )
+
+config = {
+    "packages": official,
+    "custom_commands": commands,
+}
+
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(config, f, indent=2)
+PY
+
+# The heredoc above needs the AUR sentinel; regenerate with it if AUR entries exist.
+if ((${#aur_packages[@]})); then
+  python - "$CONFIG" "${official_packages[@]}" --AUR-- "${aur_packages[@]}" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+sentinel = sys.argv.index("--AUR--")
+official = sys.argv[2:sentinel]
+aur = sys.argv[sentinel + 1:]
+quoted = " ".join("'" + p.replace("'", "'\\''") + "'" for p in aur)
+command = (
+    "set -e; pacman -S --noconfirm --needed git base-devel; "
+    "useradd --create-home --shell /bin/bash easyarch-aur 2>/dev/null || true; "
+    "mkdir -p /root/easyarch-aur-build; chown -R easyarch-aur:easyarch-aur /root/easyarch-aur-build; "
+    "for p in " + quoted + "; do "
+    "rm -rf /root/easyarch-aur-build/$p; "
+    "runuser -u easyarch-aur -- git clone https://aur.archlinux.org/$p.git /root/easyarch-aur-build/$p; "
+    "runuser -u easyarch-aur -- bash -c \"cd /root/easyarch-aur-build/$p && makepkg --syncdeps --noconfirm --clean --cleanbuild\"; "
+    "pacman -U --noconfirm /root/easyarch-aur-build/$p/*.pkg.tar.zst; done; "
+    "rm -rf /root/easyarch-aur-build; userdel -r easyarch-aur 2>/dev/null || true"
+)
+with open(path, "w", encoding="utf-8") as f:
+    json.dump({"packages": official, "custom_commands": [command]}, f, indent=2)
+PY
+fi
+
+exec /usr/bin/archinstall --config "$CONFIG" "$@"
