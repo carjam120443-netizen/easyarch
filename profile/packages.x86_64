@@ -23,6 +23,9 @@ sddm
 konsole
 dolphin
 
+# Lightweight window manager
+fluxbox
+
 # Graphics / Wayland
 xorg-server
 xorg-xwayland
