@@ -39,6 +39,9 @@ ksh
 dpkg
 apt
 
+# Package building / fakeroot support
+fakeroot
+
 # Useful tools
 nano
 vim
