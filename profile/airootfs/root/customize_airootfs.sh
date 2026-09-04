@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install AUR packages that were prebuilt by build.sh.
-# Building them here would require a Go toolchain and large temporary build
-# dependencies inside the ISO rootfs, which can exhaust the build disk.
+# Install AUR packages that were prebuilt by build.sh into the live ISO.
 AUR_DIR=/root/aur-packages
 
 # Pacman can fail its filesystem space check inside the archiso chroot because
@@ -16,6 +14,9 @@ if compgen -G "$AUR_DIR/*.pkg.tar.zst" >/dev/null; then
 fi
 
 rm -rf "$AUR_DIR"
+
+# EasyArch's installer wrapper must shadow /usr/bin/archinstall.
+chmod 755 /usr/local/bin/archinstall 2>/dev/null || true
 
 # Keep the canonical EasyArch Tux branding asset in one place.
 install -d -m 755 /usr/share/easyarch/branding
