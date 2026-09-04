@@ -46,6 +46,13 @@ apt
 # Package building / fakeroot support
 fakeroot
 
+# VirtualBox guest integration
+virtualbox-guest-utils
+
+# Windows compatibility
+wine
+winetricks
+
 # Useful tools
 nano
 vim
