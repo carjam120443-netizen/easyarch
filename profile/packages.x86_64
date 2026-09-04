@@ -4,6 +4,12 @@ base-devel
 linux
 linux-firmware
 
+# Bootloader / boot utilities
+syslinux
+memtest86+
+memtest86+-efi
+edk2-shell
+
 # Networking
 networkmanager
 
