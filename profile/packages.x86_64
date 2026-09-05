@@ -36,7 +36,8 @@ archinstall
 
 # Shells
 ksh
-fish-git
+fish
+fisher
 
 # Cross-distro package tools
 # Arch still uses pacman as its native package manager; these provide
