@@ -75,7 +75,22 @@ build_aur() {
 
   rm -rf "$srcdir"
   runuser -u aurbuild -- git clone "https://aur.archlinux.org/${package}.git" "$srcdir"
-  runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --syncdeps --noconfirm --clean --cleanbuild"
+
+  # makepkg must run as an unprivileged user, so --syncdeps cannot use sudo in
+  # GitHub Actions' non-interactive container. Read the package metadata first
+  # and install its official-repository dependencies as root instead.
+  local deps
+  deps="$(runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --printsrcinfo" | \
+    awk -F ' = ' '/^[[:space:]]+(depends|makedepends) = / {print \$2}' | \
+    sed -E 's/[<>=].*//' | sort -u)"
+
+  if [[ -n "$deps" ]]; then
+    # Ignore AUR-only dependencies here; makepkg will report those explicitly
+    # if a package requires another AUR package not already in the manifest.
+    pacman -S --noconfirm --needed $deps
+  fi
+
+  runuser -u aurbuild -- bash -c "cd '$srcdir' && makepkg --noconfirm --clean --cleanbuild"
   # Only copy the main package. Debug packages are not needed in EasyArch.
   find "$srcdir" -maxdepth 1 -type f -name "${package}-[0-9]*.pkg.tar.zst" -exec cp {} "$AUR_OUTPUT_DIR/" \;
 }
