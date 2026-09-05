@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PREFIX=/home/linuxbrew/.linuxbrew
+
+# Homebrew is designed for a single-user Linux installation. Install it for
+# the first regular user created on the live/install system.
+if [[ -x "$PREFIX/bin/brew" ]]; then
+  exit 0
+fi
+
+user=""
+while IFS=: read -r name _ uid _ home _; do
+  if (( uid >= 1000 && uid < 60000 )) && [[ -d "$home" ]]; then
+    user="$name"
+    break
+  fi
+done < /etc/passwd
+
+if [[ -z "$user" ]]; then
+  echo "EasyArch Homebrew setup: no regular user exists yet; skipping."
+  exit 0
+fi
+
+home=$(getent passwd "$user" | cut -d: -f6)
+install -d -o "$user" -g "$user" "$home/.cache"
+
+runuser -u "$user" -- env NONINTERACTIVE=1 /bin/bash -c \
+  'curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | /bin/bash'
+
+if [[ -x "$PREFIX/bin/brew" ]]; then
+  chown -R "$user:$user" "$PREFIX"
+fi
