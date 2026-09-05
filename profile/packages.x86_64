@@ -59,6 +59,11 @@ chaotic-keyring
 chaotic-mirrorlist
 chaotic-neofetch-git
 
+# Homebrew prerequisites
+procps-ng
+curl
+file
+
 # Useful tools
 nano
 vim
