@@ -2,3 +2,4 @@
 # into systems created through the EasyArch archinstall wrapper.
 yay
 fetchit
+shelly
